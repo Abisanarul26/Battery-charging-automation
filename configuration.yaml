@@ -1,0 +1,168 @@
+pred_bat:
+  module: predbat
+  class: PredBat
+
+  # -----------------------------------------------------------------
+  # Core Settings
+  # -----------------------------------------------------------------
+  prefix: predbat
+  timezone: Europe/London
+  currency_symbols:
+    - '£'
+    - 'p'
+  threads: auto
+
+  # -----------------------------------------------------------------
+  # Historical Data Sensors (GoodWe)
+  # -----------------------------------------------------------------
+  load_filter_threshold: 30
+  load_today:
+    - sensor.goodwe_today_load
+  import_today:
+    - sensor.goodwe_today_energy_import
+  export_today:
+    - sensor.goodwe_today_energy_export
+  pv_today:
+    - sensor.goodwe_today_s_pv_generation_2
+
+  # -----------------------------------------------------------------
+  # Inverter Configuration (GoodWe)
+  # -----------------------------------------------------------------
+  num_inverters: 1
+  inverter_type: MINE
+  inverter:
+    name: "MINE"
+    has_rest_api: false
+    has_mqtt_api: true
+    has_service_api: true
+    output_charge_control: "power"
+    charge_control_immediate: false
+    current_dp: 1
+    charge_discharge_with_rate: false
+    has_charge_enable_time: false
+    has_discharge_enable_time: false
+    has_target_soc: true
+    target_soc_used_for_discharge: false
+    has_reserve_soc: true
+    has_timed_pause: false
+    time_button_press: false
+    support_charge_freeze: false
+    support_discharge_freeze: false
+    has_ge_inverter_mode: true
+    has_fox_inverter_mode: false
+    has_idle_time: false
+    has_time_window: false
+    charge_time_format: "S"
+    charge_time_entity_is_option: false
+    can_span_midnight: false
+    clock_time_format: "%Y-%m-%d %H:%M:%S"
+    num_load_entities: 1
+    soc_units: "%"
+    write_and_poll_sleep: 2
+
+  # -----------------------------------------------------------------
+  # Live Power & Battery Sensors (GoodWe)
+  # -----------------------------------------------------------------
+  battery_power:
+    - sensor.goodwe_battery_power_2
+  pv_power:
+    - sensor.goodwe_pv_power_2
+  load_power:
+    - sensor.goodwe_load
+  grid_power:
+    - sensor.goodwe_meter_active_power_total
+  soc_percent:
+    - sensor.goodwe_battery_state_of_charge_2
+  
+  # Battery Specs & Control Entities
+  battery_capacity: 10
+  soc_max: 100
+  reserve:
+    - number.goodwe_depth_of_discharge_on_grid_2
+  inverter_mode:
+    - select.goodwe_inverter_operation_mode
+  inverter_time:
+    - sensor.goodwe_timestamp
+  charge_limit:
+    - number.goodwe_eco_mode_soc
+
+  # -----------------------------------------------------------------
+  # Advanced Inverter Settings
+  # -----------------------------------------------------------------
+  inverter_limit:
+    - 5000
+  inverter_reserve_max: 98
+  battery_scaling:
+    - 1.0
+  import_export_scaling: 1.0
+  clock_skew: 0
+  inverter_clock_skew_start: 0
+  inverter_clock_skew_end: 0
+  inverter_clock_skew_discharge_start: 0
+  inverter_clock_skew_discharge_end: 0
+
+  # High SoC Charging Tail-off Curve
+  battery_charge_power_curve:
+    91: 0.91
+    92: 0.81
+    93: 0.71
+    94: 0.62
+    95: 0.52
+    96: 0.43
+    97: 0.33
+    98: 0.24
+    99: 0.24
+    100: 0.24
+
+  # -----------------------------------------------------------------
+  # Solar Forecasting (Solcast)
+  # -----------------------------------------------------------------
+  solcast_host: 'https://api.solcast.com.au/'
+  solcast_api_key: <YOUR_SOLCAST_API_KEY> # REPLACE WITH YOUR API KEY
+  solcast_poll_hours: 8
+  pv_forecast_today: sensor.solcast_pv_forecast_forecast_today
+  pv_forecast_tomorrow: sensor.solcast_pv_forecast_forecast_tomorrow
+  pv_forecast_d3: sensor.solcast_pv_forecast_forecast_day_3
+  pv_forecast_d4: sensor.solcast_pv_forecast_forecast_day_4
+
+  # -----------------------------------------------------------------
+  # EV Settings
+  # -----------------------------------------------------------------
+  num_cars: 0
+
+  # -----------------------------------------------------------------
+  # Octopus Energy Integration
+  # -----------------------------------------------------------------
+  octopus_api_key: <YOUR_OCTOPUS_API_KEY> # REPLACE WITH YOUR API KEY
+  octopus_api_account: <YOUR_OCTOPUS_ACCOUNT_ID> # REPLACE WITH YOUR ACCOUNT ID
+  octopus_automatic: true
+
+  # Octopus Sensors (Replace placeholders with your actual meter/account IDs)
+  octopus_saving_session: binary_sensor.octopus_energy_<YOUR_ACCOUNT_ID>_octoplus_saving_sessions
+  octopus_saving_session_octopoints_per_penny: 8
+  octopus_free_session: 're:(event.octopus_energy_([0-9a-z_]+|)_octoplus_free_electricity_session_events)'
+  
+  metric_octopus_import: sensor.octopus_energy_electricity_<YOUR_METER_ID>_current_rate
+  metric_standing_charge: sensor.octopus_energy_electricity_<YOUR_METER_ID>_current_standing_charge
+
+  # -----------------------------------------------------------------
+  # Prediction & Model Tuning
+  # -----------------------------------------------------------------
+  forecast_hours: 48
+  days_previous:
+    - 1
+    - 7
+  days_previous_weight:
+    - 2
+    - 1
+
+  # -----------------------------------------------------------------
+  # Automations
+  # -----------------------------------------------------------------
+  export_triggers:
+    - name: 'large'
+      minutes: 60
+      energy: 1.0
+    - name: 'small'
+      minutes: 15
+      energy: 0.25
