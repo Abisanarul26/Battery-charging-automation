@@ -5,6 +5,9 @@ This project automates the charging of a GoodWe home battery system using Home A
 
 Since there is no export tariff activated for this site, the system is strictly configured to **Control charge**, capturing excess solar and utilizing cheap grid blocks without force-discharging to the grid.
 
+![Predicted charging plan](https://github.com/Abisanarul26/Home-automation-by-Home-Assistant./blob/main/images/Screenshot%202026-02-05%20122107.png)
+
+
 ## Integrations & Add-ons Used
 * **Home Assistant OS** (Core platform)
 * **HACS** (Home Assistant Community Store)
