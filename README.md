@@ -5,7 +5,7 @@ This project automates the charging of a GoodWe home battery system using Home A
 
 Since there is no export tariff activated for this site, the system is strictly configured to **Control charge**, capturing excess solar and utilizing cheap grid blocks without force-discharging to the grid.
 
-![Predicted charging plan](https://github.com/Abisanarul26/Battery-charging-automation./blob/main/images/charging_plan.png)
+![Predicted charging plan](https://github.com/Abisanarul26/Battery-charging-automation/blob/main/images/charging_plan.png)
 
 
 ## Integrations & Add-ons Used
