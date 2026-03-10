@@ -1,4 +1,4 @@
-# Home Assistant Battery Charging Automation
+# Home Assistant Battery Charging Automation by Predbat for Goodwe Inverter.
 
 ## Overview
 This project automates the charging of a GoodWe home battery system using Home Assistant OS. By combining dynamic energy tariffs from Octopus Energy with solar generation forecasts from Solcast, the system uses the **Predbat** integration to intelligently calculate the optimal times to charge the battery from the grid, ensuring maximum cost savings. 
