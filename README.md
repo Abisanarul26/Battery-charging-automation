@@ -1,51 +1,301 @@
-# Home Assistant Battery Charging Automation by Predbat for Goodwe Inverter.
+# Home Assistant Battery Charging Automation (GoodWe + Predbat)
 
 ## Overview
-This project automates the charging of a GoodWe home battery system using Home Assistant OS. By combining dynamic energy tariffs from Octopus Energy with solar generation forecasts from Solcast, the system uses the **Predbat** integration to intelligently calculate the optimal times to charge the battery from the grid, ensuring maximum cost savings. 
+This project automates the charging and discharging behavior of a **GoodWe hybrid inverter battery system** using **Home Assistant OS**.
 
-Since there is no export tariff activated for this site, the system is strictly configured to **Control charge**, capturing excess solar and utilizing cheap grid blocks without force-discharging to the grid.
+The system integrates:
+
+- Dynamic grid tariff data
+- Solar generation forecasts
+- Predictive battery optimization
+
+to intelligently control when the battery should charge, discharge, or remain idle.
+
+The optimization engine is **Predbat**, which calculates the optimal charging schedule based on:
+
+- Solar forecast from **Solcast**
+- Dynamic electricity pricing from **Octopus Energy**
+- Current battery state of charge
+
+However, **Predbat does not natively support GoodWe inverters**, so a custom control layer was implemented using **Home Assistant automations** that interpret Predbat's plan and translate it into GoodWe EMS commands.
+
+The system ensures:
+
+- Battery charges during **cheap tariff periods**
+- Solar surplus is stored instead of exported
+- **Grid export is minimized to near zero** (since export tariff is not enabled)
+
+---
 
 ![Predicted charging plan](https://github.com/Abisanarul26/Battery-charging-automation/blob/main/images/charging_plan.png)
 
+---
 
-## Integrations & Add-ons Used
-* **Home Assistant OS** (Core platform)
-* **HACS** (Home Assistant Community Store)
-* **MQTT** (Message broker required for Predbat)
-* **SSH & Web Terminal / File Editor** (For configuration editing)
-* **GoodWe** (Inverter integration)
-* **Octopus Energy** (Import tariff data)
-* **Solcast Solar** (Solar generation forecasting)
-* **Predbat** (Predictive battery charging optimization algorithm)
+# Integrations & Add-ons Used
+
+### Core Platform
+- Home Assistant OS
+
+### Add-ons
+- HACS (Home Assistant Community Store)
+- MQTT Broker
+- SSH & Web Terminal
+- File Editor
+
+### Integrations
+- GoodWe Inverter
+- Octopus Energy
+- Solcast Solar
+- Predbat
 
 ---
 
-## Setup & Installation Steps
+# System Architecture
 
-### 1. Connect the GoodWe Inverter
-* Installed the GoodWe integration in Home Assistant.
-* Connected to the inverter locally using its IP address.
-* Verified that battery state of charge (SoC) and control entities were actively reporting.
+```
+Solcast Forecast
+        │
+        ▼
+Octopus Tariff Data
+        │
+        ▼
+     Predbat
+ (Charging Optimization)
+        │
+        ▼
+ Home Assistant Automations
+ (Custom Control Layer)
+        │
+        ▼
+  GoodWe EMS Mode Control
+```
 
-### 2. Configure Solcast for Solar Prediction
-* Created a rooftop site profile on the Solcast website with the array's specifications.
-* Generated an API key.
-* Installed the Solcast integration in HA, inputted the API key, and successfully pulled in the generation forecast data.
-
-### 3. Integrate Octopus Energy
-* Installed the Octopus Energy integration.
-* Authenticated the account to pull in current and upcoming grid import tariff rates so Predbat knows exactly when electricity is cheapest.
-
-### 4. Install Predbat via HACS
-* Installed the Predbat integration through HACS.
-* Set up the MQTT broker, which Predbat relies on to communicate entity states and predictions within Home Assistant.
-
-### 5. Custom Inverter Template & Troubleshooting
-* **The Challenge:** The default Predbat installation did not have a built-in template that perfectly mapped to this specific GoodWe setup.
-* **The Solution:** Used the File Editor and SSH to create and edit a custom inverter template. Hand-mapped the correct `entity_id`s for the inverter controls (resolving missing entity errors like `charge_limit`).
-* **Troubleshooting:** Actively monitored Home Assistant and AppDaemon logs to identify configuration warnings, adjusting the custom template until Predbat could successfully read and write to the inverter.
+Predbat calculates the **charging plan**, while **Home Assistant automations execute the plan on the inverter**.
 
 ---
 
-## Current Status
-**Status: All Set & Operational.** Predbat is successfully reading the solar forecast and tariff rates, calculating the optimal charging plan, and directly controlling the GoodWe inverter to minimize grid import costs.
+# Setup & Installation
+
+## 1. Connect the GoodWe Inverter
+- Installed the **GoodWe integration** in Home Assistant.
+- Connected to the inverter locally using its **IP address**.
+- Verified that entities such as:
+
+  - Battery State of Charge (SoC)
+  - Battery Power
+  - House Load
+  - PV Generation
+
+were correctly reporting in Home Assistant.
+
+---
+
+## 2. Configure Solcast Solar Forecast
+
+1. Created a **rooftop site profile** in Solcast.
+2. Entered system parameters:
+   - Panel capacity
+   - Tilt
+   - Azimuth
+3. Generated an **API key**.
+4. Installed the **Solcast integration** in Home Assistant.
+5. Confirmed that forecast entities were updating successfully.
+
+---
+
+## 3. Integrate Octopus Energy Tariff
+
+1. Installed the **Octopus Energy integration**.
+2. Authenticated the account.
+3. Imported dynamic **electricity price data**.
+
+This allows Predbat to identify **low-cost charging windows**.
+
+---
+
+## 4. Install Predbat via HACS
+
+Predbat was installed using **HACS**.
+
+Steps:
+
+1. Install Predbat repository.
+2. Install **MQTT Broker** add-on.
+3. Configure MQTT connection for Predbat.
+
+Predbat then creates prediction entities including:
+
+- Charging periods
+- Demand periods
+- Hold periods
+- Predicted battery behavior
+
+---
+
+## 5. Custom Inverter Template
+
+### Problem
+Predbat does **not natively support GoodWe inverters**.
+
+Therefore, the default inverter template did not match the available GoodWe entities.
+
+Example issue:
+
+```
+Missing entity: charge_limit
+```
+
+### Solution
+A **custom inverter template** was created by:
+
+- Accessing the Home Assistant filesystem using **SSH**
+- Editing configuration files via **File Editor**
+- Mapping GoodWe entities manually
+
+Predbat was then able to read:
+
+- Battery state
+- Charging status
+- System load
+
+and trigger control actions through Home Assistant automations.
+
+---
+
+# Automation Control Layer
+
+To bridge Predbat's charging plan with the GoodWe inverter, **8 Home Assistant automations** were developed.
+
+These automations interpret Predbat's status signals and dynamically control the inverter's **EMS mode and power limits**.
+
+---
+
+# Automation Logic
+
+## 1. Battery Charging Mode
+This automation switches the inverter **EMS mode to Charge** when Predbat indicates a charging window.
+
+Purpose:
+
+- Charge the battery during **low electricity price periods**
+- Reach the **target state of charge** before peak tariffs
+
+---
+
+## 2. Battery Discharging Mode
+This automation activates when Predbat enters a **Demand period**.
+
+Action:
+
+- Set inverter **EMS mode to Discharge**
+- Battery supplies the home load instead of importing expensive grid electricity.
+
+---
+
+## 3. Battery Standby Mode
+When Predbat signals **Hold Charging**, the inverter is switched to **Standby**.
+
+Purpose:
+
+- Maintain current battery energy
+- Prevent unnecessary charging or discharging
+
+---
+
+## 4. Fixed Charging EMS Limit
+During scheduled charging periods, the EMS **charge power limit is set to a fixed value**.
+
+Purpose:
+
+- Utilize the **maximum allowable charging rate**
+- Capture as much cheap electricity as possible during the tariff window.
+
+---
+
+## 5. Dynamic Discharge EMS Limit
+This automation dynamically adjusts the **battery discharge power limit**.
+
+Goal:
+
+```
+Grid export ≈ 0 W
+```
+
+Since the system does **not receive export payments**, discharging is limited so that battery output only covers **home consumption**.
+
+---
+
+## 6. PV Surplus Override Charging
+If the inverter is in **Demand or Hold mode**, but:
+
+```
+PV generation > House Load
+```
+
+then the system temporarily switches the inverter to **Charge mode**.
+
+Purpose:
+
+- Capture **excess solar energy**
+- Prevent exporting free energy to the grid.
+
+---
+
+## 7. Surplus-Based Charging Power Control
+When PV surplus charging is active, this automation dynamically adjusts the **EMS charge limit**.
+
+Charge power is set equal to:
+
+```
+PV generation - House load
+```
+
+This ensures:
+
+- Battery absorbs **only the surplus power**
+- **Grid import is avoided**
+
+---
+
+## 8. EMS Mode Reset
+When the PV surplus condition ends, the inverter mode is **restored to Predbat's original plan**.
+
+Example:
+
+If Predbat planned **Demand mode**, the system switches back from temporary charging to discharging.
+
+This ensures the **optimization strategy remains intact**.
+
+---
+
+# Key System Behavior
+
+The automation system ensures:
+
+### Cost Optimization
+Battery charges during **cheap tariff periods**.
+
+### Solar Utilization
+Excess PV is stored instead of exported.
+
+### Export Avoidance
+Grid export is minimized to **near zero**.
+
+### Predbat Compatibility
+Predbat predictions are translated into **GoodWe-compatible commands**.
+
+---
+
+# Current Status
+
+**Status: Fully Operational**
+
+The system is successfully:
+
+- Reading **solar forecasts**
+- Importing **dynamic electricity tariffs**
+- Generating **Predbat charging plans**
+- Executing the plan via **Home Assistant automations**
+- Dynamically controlling the **GoodWe inverter EMS mode**
+
+This results in **fully automated cost-optimized battery management**.
