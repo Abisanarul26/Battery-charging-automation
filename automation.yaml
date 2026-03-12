@@ -1,0 +1,292 @@
+- id: '1772694408606'
+  alias: solcast_update
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    hours: /4
+  conditions: []
+  actions:
+  - action: solcast_solar.update_forecasts
+    metadata: {}
+    data: {}
+  mode: single
+- id: '1772990604093'
+  alias: Battery charge
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - predbat.status
+    from:
+    to:
+    - Charging
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.goodwe_battery_state_of_charge_2
+    below: 98
+  actions:
+  - action: select.select_option
+    metadata: {}
+    target:
+      entity_id: select.goodwe_ems_mode
+    data:
+      option: charge_battery
+  mode: single
+- id: '1772990931030'
+  alias: Battery Discharge
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - predbat.status
+    from:
+    to:
+    - Demand
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.goodwe_battery_state_of_charge_2
+    above: 10
+  actions:
+  - action: select.select_option
+    metadata: {}
+    target:
+      entity_id: select.goodwe_ems_mode
+    data:
+      option: discharge_battery
+  mode: single
+- id: '1772991620626'
+  alias: Battery standby
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - predbat.status
+    from:
+    to:
+    - Hold charging
+  conditions: []
+  actions:
+  - action: select.select_option
+    metadata: {}
+    target:
+      entity_id: select.goodwe_ems_mode
+    data:
+      option: battery_standby
+  mode: single
+- id: '1773033831337'
+  alias: New charging
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.predbat_charging
+    from:
+    to:
+    - 'on'
+  conditions: []
+  actions:
+  - action: select.select_option
+    metadata: {}
+    target:
+      entity_id: select.goodwe_ems_mode
+    data:
+      option: charge_battery
+  mode: single
+- id: '1773033886463'
+  alias: New discharging
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.predbat_demand
+    from:
+    to:
+    - 'on'
+  conditions: []
+  actions:
+  - action: select.select_option
+    metadata: {}
+    target:
+      entity_id: select.goodwe_ems_mode
+    data:
+      option: discharge_battery
+  mode: single
+- id: '1773045084361'
+  alias: Battery discharge EMS power limit
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.goodwe_house_consumption_2
+    - sensor.goodwe_pv_power_2
+    from:
+    to:
+  conditions:
+  - condition: state
+    entity_id: predbat.status
+    state:
+    - Demand
+  - condition: state
+    entity_id: select.goodwe_ems_mode
+    state:
+    - discharge_battery
+  - condition: state
+    entity_id: binary_sensor.pv_greater_than_load
+    state:
+    - 'off'
+  actions:
+  - action: number.set_value
+    metadata: {}
+    data:
+      value: '{{ states(''sensor.battery_discharge_ems_limit'') | float(0) }}'
+    target:
+      entity_id: number.goodwe_ems_power_limit
+  mode: single
+- id: '1773050599489'
+  alias: Battery charging EMS power limit
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - predbat.status
+    from:
+    to:
+    - Charging
+  conditions: []
+  actions:
+  - action: number.set_value
+    metadata: {}
+    target:
+      entity_id: number.goodwe_ems_power_limit
+    data:
+      value: '{{3000}}'
+  mode: single
+- id: '1773126858573'
+  alias: PV surplus during Demand and Hold charging
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.pv_start_charge_binary
+    from:
+    - 'off'
+    to:
+    - 'on'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+  conditions:
+  - condition: state
+    entity_id: predbat.status
+    state:
+    - Demand
+    - Hold charging
+  actions:
+  - action: select.select_option
+    metadata: {}
+    target:
+      entity_id: select.goodwe_ems_mode
+    data:
+      option: charge_battery
+  mode: single
+- id: '1773128180676'
+  alias: PV surplus EMS power limit
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.pv_surplus
+    from:
+    to:
+  conditions:
+  - condition: state
+    entity_id: predbat.status
+    state:
+    - Demand
+    - Hold charging
+  - condition: state
+    entity_id: select.goodwe_ems_mode
+    state:
+    - charge_battery
+  actions:
+  - action: number.set_value
+    metadata: {}
+    target:
+      entity_id: number.goodwe_ems_power_limit
+    data:
+      value: '{{ states(''sensor.pv_surplus'') | float(0) }}'
+  mode: single
+- id: '1773129244255'
+  alias: EMS mode reset from PV surplus
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.pv_stop_charge_binary
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+    from:
+    - 'off'
+    to:
+    - 'on'
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: state
+        entity_id: predbat.status
+        state:
+        - Demand
+      sequence:
+      - action: select.select_option
+        metadata: {}
+        target:
+          entity_id: select.goodwe_ems_mode
+        data:
+          option: discharge_battery
+    - conditions:
+      - condition: state
+        entity_id: predbat.status
+        state:
+        - Hold charging
+      sequence:
+      - action: select.select_option
+        metadata: {}
+        target:
+          entity_id: select.goodwe_ems_mode
+        data:
+          option: battery_standby
+  mode: single
+- id: '1773238430861'
+  alias: Pv surplus zero ems limit.
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.pv_surplus
+    from:
+    to:
+  conditions:
+  - condition: state
+    entity_id: predbat.status
+    state:
+    - Demand
+  - condition: state
+    entity_id: binary_sensor.pv_start_charge_binary
+    state:
+    - 'off'
+  - condition: state
+    entity_id: binary_sensor.pv_stop_charge_binary
+    state:
+    - 'on'
+  actions:
+  - action: number.set_value
+    metadata: {}
+    target:
+      entity_id: number.goodwe_ems_power_limit
+    data:
+      value: '{{ 0 }}'
+  mode: single
