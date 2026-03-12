@@ -164,7 +164,7 @@ and trigger control actions through Home Assistant automations.
 
 # Automation Control Layer
 
-To bridge Predbat's charging plan with the GoodWe inverter, **8 Home Assistant automations** were developed.
+To bridge Predbat's charging plan with the GoodWe inverter, **9 Home Assistant automations** were developed.
 
 These automations interpret Predbat's status signals and dynamically control the inverter's **EMS mode and power limits**.
 
@@ -257,7 +257,14 @@ This ensures:
 
 ---
 
-## 8. EMS Mode Reset
+## 8. EMS discharge power limit zero during solar surplus threshold
+When PV surplus charging is active, this automation set the ems dicharge limt to zero until the **Surplus-Based Charging Power Control** automation triggers.
+
+Discharge power is set zero; this ensures unnecessary battery power to be exported.
+
+This automation ensures the spikes formation during mode switching frequently, by ensuring the threshold.
+
+## 9. EMS Mode Reset
 When the PV surplus condition ends, the inverter mode is **restored to Predbat's original plan**.
 
 Example:
