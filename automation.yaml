@@ -23,7 +23,7 @@
   conditions:
   - condition: numeric_state
     entity_id: sensor.goodwe_battery_state_of_charge_2
-    below: 98
+    below: 100
   actions:
   - action: select.select_option
     metadata: {}
@@ -160,6 +160,42 @@
       entity_id: number.goodwe_ems_power_limit
     data:
       value: '{{3000}}'
+  - choose:
+    - conditions:
+      - condition: numeric_state
+        entity_id: sensor.goodwe_battery_state_of_charge_2
+        below: 90
+      sequence:
+      - action: number.set_value
+        metadata: {}
+        target:
+          entity_id: number.goodwe_ems_power_limit
+        data:
+          value: '{{ 3000 }}'
+    - conditions:
+      - condition: numeric_state
+        entity_id: sensor.goodwe_battery_state_of_charge_2
+        above: 90
+        below: 100
+      sequence:
+      - action: number.set_value
+        metadata: {}
+        target:
+          entity_id: number.goodwe_ems_power_limit
+        data:
+          value: '{{ 2000 }}'
+    - conditions:
+      - condition: numeric_state
+        entity_id: sensor.goodwe_battery_state_of_charge_2
+        above: 95
+        below: 100
+      sequence:
+      - action: number.set_value
+        metadata: {}
+        target:
+          entity_id: number.goodwe_ems_power_limit
+        data:
+          value: '{{ 1000 }}'
   mode: single
 - id: '1773126858573'
   alias: PV surplus during Demand and Hold charging
